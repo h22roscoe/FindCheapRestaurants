@@ -5,6 +5,7 @@ import {
   LatLng,
   PlaceDetailsResult,
 } from '@google/maps';
+import * as cors from 'cors';
 
 const API_KEY = functions.config().maps?.key ?? process.env.API_KEY;
 const client = createClient({ key: API_KEY });
@@ -12,32 +13,34 @@ const client = createClient({ key: API_KEY });
 export const restaurants = functions
   .region('europe-west1')
   .https.onRequest(async (request, response) => {
-    const location = request.query.location;
-    const radius: number = Number.isNaN(+request.query.radius)
-      ? 10000
-      : +request.query.radius;
-    const maxprice: number = Number.isNaN(+request.query.maxprice)
-      ? 1
-      : +request.query.maxprice;
-    const minprice: number = Number.isNaN(+request.query.minprice)
-      ? 0
-      : +request.query.minprice;
-    const minrating: number = Number.isNaN(+request.query.minrating)
-      ? 4
-      : +request.query.minrating;
-    const minusers: number = Number.isNaN(+request.query.minusers)
-      ? 10
-      : +request.query.minusers;
-    response.send(
-      await getRestaurants(
-        location,
-        radius,
-        maxprice,
-        minprice,
-        minrating,
-        minusers
-      )
-    );
+    return cors({ "origin": false })(request, response, async () => {
+      const location = request.query.location;
+      const radius: number = Number.isNaN(+request.query.radius)
+        ? 10000
+        : +request.query.radius;
+      const maxprice: number = Number.isNaN(+request.query.maxprice)
+        ? 1
+        : +request.query.maxprice;
+      const minprice: number = Number.isNaN(+request.query.minprice)
+        ? 0
+        : +request.query.minprice;
+      const minrating: number = Number.isNaN(+request.query.minrating)
+        ? 4
+        : +request.query.minrating;
+      const minusers: number = Number.isNaN(+request.query.minusers)
+        ? 10
+        : +request.query.minusers;
+      response.send(
+        await getRestaurants(
+          location,
+          radius,
+          maxprice,
+          minprice,
+          minrating,
+          minusers
+        )
+      );
+    });
   });
 
 async function getRestaurants(

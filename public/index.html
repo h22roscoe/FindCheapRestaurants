@@ -1,91 +1,264 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="manifest" href="/manifest.webmanifest">
-    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#0cc2df">
-    <link rel="stylesheet" href="css/mystyles.css">
+    <head>
+        <link
+            rel="apple-touch-icon"
+            sizes="180x180"
+            href="/apple-touch-icon.png"
+        />
+        <link
+            rel="icon"
+            type="image/png"
+            sizes="32x32"
+            href="/favicon-32x32.png"
+        />
+        <link
+            rel="icon"
+            type="image/png"
+            sizes="16x16"
+            href="/favicon-16x16.png"
+        />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#0cc2df" />
+        <link rel="stylesheet" href="css/mystyles.css" />
 
-    <meta name="msapplication-TileColor" content="#2d89ef">
-    <meta name="theme-color" content="#0cc2df">
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="msapplication-TileColor" content="#2d89ef" />
+        <meta name="theme-color" content="#0cc2df" />
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
-    <script defer src="https://unpkg.com/pwabuilder-components@latest"></script>
-    <script
-      defer
-      type="module"
-      src="https://cdn.jsdelivr.net/npm/@pwabuilder/pwainstall"
-    ></script>
-    <script>
-      // This is the "Offline page" service worker
+        <script
+            defer
+            src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"
+        ></script>
+        <script>
+            // This is the "Offline page" service worker
 
-      // Add this below content to your HTML page, or add the js file to your page at the very top to register service worker
+            // Add this below content to your HTML page, or add the js file to your page at the very top to register service worker
 
-      // Check compatibility for the browser we're running this in
-      if ("serviceWorker" in navigator) {
-        if (navigator.serviceWorker.controller) {
-          console.log("[PWA Builder] active service worker found, no need to register");
-        } else {
-          // Register the service worker
-          navigator.serviceWorker
-            .register("pwabuilder-sw.js", {
-              scope: "./"
-            })
-            .then(function (reg) {
-              console.log("[PWA Builder] Service worker has been registered for scope: " + reg.scope);
-            });
-        }
-      }
-    </script>
-    <script src="js/bundle.js"></script>
+            // Check compatibility for the browser we're running this in
+            if ('serviceWorker' in navigator) {
+                if (navigator.serviceWorker.controller) {
+                    console.log(
+                        '[PWA Builder] active service worker found, no need to register'
+                    )
+                } else {
+                    // Register the service worker
+                    navigator.serviceWorker
+                        .register('pwabuilder-sw.js', {
+                            scope: './',
+                        })
+                        .then(function(reg) {
+                            console.log(
+                                '[PWA Builder] Service worker has been registered for scope: ' +
+                                    reg.scope
+                            )
+                        })
+                }
+            }
+        </script>
+        <script src="js/bundle.js"></script>
 
-    <title>Find Cheap Restaurants</title>
+        <title>Find Cheap Restaurants</title>
 
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/7.7.0/firebase-app.js"></script>
-    <!-- include only the Firebase features as you need
-    <script defer src="/__/firebase/7.7.0/firebase-auth.js"></script>
-    <script defer src="/__/firebase/7.7.0/firebase-database.js"></script>
-    <script defer src="/__/firebase/7.7.0/firebase-messaging.js"></script>
-    <script defer src="/__/firebase/7.7.0/firebase-storage.js"></script> -->
-    <!-- initialize the SDK after all desired features are loaded -->
-    <script defer src="/__/firebase/init.js"></script>
-  </head>
-  <body>
-    <section class="section">
-      <div class="container">
-        <h1 class="title">
-          Find Cheap Restaurants
-        </h1>
-        <p class="subtitle">
-          Helps you find <strong>good</strong>, cheap restaurants in an area.
-        </p>
-        <form>
-          <div class="field">
-            <label class="label">Minimum price</label>
-            <div class="control">
-              <input id="minPrice" class="slider has-output is-fullwidth" step="1" min="0" max="4" value="2" type="range">
+        <!-- update the version number as needed -->
+        <script defer src="/__/firebase/7.7.0/firebase-app.js"></script>
+        <!-- initialize the SDK after all desired features are loaded -->
+        <script defer src="/__/firebase/init.js"></script>
+        <script>
+            function getLocation(callback) {
+                if ('geolocation' in navigator) {
+                    navigator.geolocation.getCurrentPosition(position => {
+                        callback(position.coords)
+                        return position.coords
+                    })
+                } else {
+                    console.info(
+                        'geolocation is not supported in this environment'
+                    )
+                    callback(null)
+                    return null
+                }
+            }
+
+            function findRestaurants() {
+                let url =
+                    'https://europe-west1-findcheaprestaurants.cloudfunctions.net/restaurants'
+                url =
+                    'http://localhost:5001/findcheaprestaurants/europe-west1/restaurants'
+                let minPrice = document.getElementById('minPrice').value
+                let maxPrice = document.getElementById('maxPrice').value
+                let minRating = document.getElementById('minRating').value
+                let radius = document.getElementById('radius').value
+                getLocation(loc => {
+                    if (loc === null) {
+                        url = `${url}?minprice=${minPrice}&maxprice=${maxPrice}&minrating=${minRating}&radius=${radius}`
+                    } else {
+                        console.log(loc)
+                        url = `${url}?location=${loc.latitude},${loc.longitude}&minprice=${minPrice}&maxprice=${maxPrice}&minrating=${minRating}&radius=${radius}`
+                    }
+
+                    fetch(url)
+                        .then(response => {
+                            return response.json()
+                        })
+                        .then(json => {
+                            let results = json.filter(el => el != null)
+                            console.log(results)
+                            let html =
+                                `
+      <table class="table is-striped is-hoverable is-fullwidth">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th><abbr title="Rating">⭐</abbr></th>
+            <th><abbr title="Price level">£</abbr></th>
+            <th><abbr title="Address">Addr</abbr></th>
+          </tr>
+        </thead>
+        <tbody>
+      ` +
+                                results
+                                    .map(res => {
+                                        return `
+          <tr>
+            <td>${res.name}</td>
+            <td>${res.rating}</td>
+            <td>${res.price_level}</td>
+            <td>${res.adr_address}</td>
+          </tr>
+        `
+                                    })
+                                    .join('\n') +
+                                `
+        </tbody>
+      </table>
+      `
+
+                            document.getElementById('results').innerHTML = html
+                        })
+                        .catch(err => console.error(err))
+                })
+            }
+        </script>
+    </head>
+    <body>
+        <section class="section">
+            <div class="container">
+                <h1 class="title">
+                    Find Cheap Restaurants
+                </h1>
+                <p class="subtitle">
+                    Helps you find <strong>good</strong>, cheap restaurants in
+                    an area.
+                </p>
+
+                <form>
+                    <div class="field is-horizontal">
+                        <label class="field-label is-normal"
+                            >Minimum price</label
+                        >
+                        <div class="field-body">
+                            <div class="control">
+                                <input
+                                    id="minPrice"
+                                    class="slider has-output is-fullwidth"
+                                    step="1"
+                                    min="0"
+                                    max="4"
+                                    value="2"
+                                    type="range"
+                                />
+                            </div>
+                            <output for="minPrice">2</output>
+                        </div>
+                    </div>
+
+                    <div class="field is-horizontal">
+                        <label class="field-label is-normal"
+                            >Maximum price</label
+                        >
+                        <div class="field-body">
+                            <div class="control">
+                                <input
+                                    id="maxPrice"
+                                    class="slider has-output is-fullwidth"
+                                    step="1"
+                                    min="0"
+                                    max="4"
+                                    value="2"
+                                    type="range"
+                                />
+                            </div>
+                            <output for="maxPrice">2</output>
+                        </div>
+                    </div>
+
+                    <div class="field is-horizontal">
+                        <label class="field-label is-normal"
+                            >Minimum rating</label
+                        >
+                        <div class="field-body">
+                            <div class="control">
+                                <input
+                                    id="minRating"
+                                    class="slider has-output is-fullwidth"
+                                    step="0.01"
+                                    min="0"
+                                    max="5"
+                                    value="4"
+                                    type="range"
+                                />
+                            </div>
+                            <output for="minRating">4.00</output>
+                        </div>
+                    </div>
+
+                    <div class="field is-horizontal">
+                        <label class="field-label is-normal"
+                            >Radius around your location</label
+                        >
+                        <div class="field-body">
+                            <div class="control">
+                                <input
+                                    id="radius"
+                                    class="slider has-output is-fullwidth"
+                                    step="1000"
+                                    min="1000"
+                                    max="50000"
+                                    value="3000"
+                                    type="range"
+                                />
+                            </div>
+                            <output for="radius">3000</output>
+                        </div>
+                    </div>
+
+                    <div class="field is-horizontal">
+                        <div class="field-label">
+                            <!-- Left empty for spacing -->
+                        </div>
+                        <div class="field-body">
+                            <div class="field">
+                                <div class="control">
+                                    <button
+                                        class="button is-primary"
+                                        onclick="findRestaurants()"
+                                        type="button"
+                                    >
+                                        Find restaurants near me!
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
-            <div class="">
-              <output for="minPrice">2</output>
+          </section>
+          <section class="section">
+            <div class="container">
+              <div id="results" class="table-container"></div>
             </div>
-          </div>
-          <div class="field">
-            <label class="label">Maximum price</label>
-            <div class="control">
-              <input id="maxPrice" class="slider has-output is-fullwidth" step="1" min="0" max="4" value="2" type="range">
-            </div>
-            <div class="">
-              <output for="maxPrice">2</output>
-            </div>
-          </div>        </form>
-        <pwb-geolocation></pwb-geolocation>
-        <pwa-install></pwa-install>
-      </div>
-    </section>
-  </body>
+          </section>
+    </body>
 </html>
