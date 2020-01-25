@@ -6,13 +6,14 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#0cc2df">
+    <link rel="stylesheet" href="css/mystyles.css">
+
     <meta name="msapplication-TileColor" content="#2d89ef">
     <meta name="theme-color" content="#0cc2df">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
-    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
 
+    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
     <script defer src="https://unpkg.com/pwabuilder-components@latest"></script>
     <script
       defer
@@ -40,6 +41,7 @@
         }
       }
     </script>
+    <script src="js/bundle.js"></script>
 
     <title>Find Cheap Restaurants</title>
 
@@ -64,13 +66,23 @@
         </p>
         <form>
           <div class="field">
-            <label class="label">Minimum rating</label>
+            <label class="label">Minimum price</label>
             <div class="control">
-              <input class="slider is-fullwidth" step="1" min="0" max="4" value="2" type="range" disabled="disabled">
+              <input id="minPrice" class="slider has-output is-fullwidth" step="1" min="0" max="4" value="2" type="range">
+            </div>
+            <div class="">
+              <output for="minPrice">2</output>
             </div>
           </div>
-          <input type="number">
-        </form>
+          <div class="field">
+            <label class="label">Maximum price</label>
+            <div class="control">
+              <input id="maxPrice" class="slider has-output is-fullwidth" step="1" min="0" max="4" value="2" type="range">
+            </div>
+            <div class="">
+              <output for="maxPrice">2</output>
+            </div>
+          </div>        </form>
         <pwb-geolocation></pwb-geolocation>
         <pwa-install></pwa-install>
       </div>

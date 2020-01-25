@@ -1,0 +1,31 @@
+{
+  "name": "findcheaprestaurants",
+  "version": "1.0.0",
+  "description": "Helps me find good, cheap restaurants in an area.",
+  "main": "webpack.config.js",
+  "scripts": {
+    "build": "webpack --mode production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/h22roscoe/FindCheapRestaurants.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/h22roscoe/FindCheapRestaurants/issues"
+  },
+  "homepage": "https://github.com/h22roscoe/FindCheapRestaurants#readme",
+  "devDependencies": {
+    "bulma": "^0.8.0",
+    "bulma-slider": "^2.0.0",
+    "css-loader": "^3.4.2",
+    "extract-text-webpack-plugin": "^4.0.0-beta.0",
+    "mini-css-extract-plugin": "^0.9.0",
+    "node-sass": "^4.13.1",
+    "sass-loader": "^8.0.2",
+    "style-loader": "^1.1.3",
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10"
+  }
+}
