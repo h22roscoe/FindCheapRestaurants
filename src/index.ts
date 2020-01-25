@@ -14,7 +14,14 @@ export const restaurants = functions.region("europe-west1").https.onRequest(asyn
     response.send(await getRestaurants(location, radius, maxprice, minprice, minrating, minusers));
 });
 
-function getRestaurants(location: LatLng, radius: number, maxprice: number, minprice: number, minrating: number, minusers: number) {
+async function getRestaurants(
+    location: LatLng,
+    radius: number,
+    maxprice: number,
+    minprice: number,
+    minrating: number,
+    minusers: number
+) {
     const req: PlacesNearbyRequest = {
         location: location ?? [51.556203, -0.087639],
         keyword: "restaurant",
