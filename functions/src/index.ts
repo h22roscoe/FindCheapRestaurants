@@ -6,7 +6,7 @@ import {
   PlaceDetailsResult,
 } from '@google/maps';
 
-const API_KEY = functions.config().maps.key;
+const API_KEY = functions.config().maps?.key ?? process.env.API_KEY;
 const client = createClient({ key: API_KEY });
 
 export const restaurants = functions
