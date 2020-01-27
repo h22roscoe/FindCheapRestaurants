@@ -65,198 +65,42 @@
         <script defer src="/__/firebase/7.7.0/firebase-app.js"></script>
         <!-- initialize the SDK after all desired features are loaded -->
         <script defer src="/__/firebase/init.js"></script>
+        <script defer src="js/element.js"></script>
+        <script src="js/main.js"></script>
         <script>
             function getLocation(callback) {
                 if ('geolocation' in navigator) {
-                    navigator.geolocation.getCurrentPosition(position => {
-                        callback(position.coords)
-                        return position.coords
-                    })
+                    navigator.geolocation.getCurrentPosition(
+                        position => {
+                            callback([
+                                position.coords.latitude,
+                                position.coords.longitude,
+                            ])
+                        },
+                        error => {
+                            console.error(error)
+                            callback([51.556203, -0.087639])
+                        }
+                    )
                 } else {
                     console.info(
                         'geolocation is not supported in this environment'
                     )
-                    callback(null)
-                    return null
+                    callback([51.556203, -0.087639])
                 }
             }
 
-            function findRestaurants() {
-                let url =
-                    'https://europe-west1-findcheaprestaurants.cloudfunctions.net/restaurants'
-                let minPrice = document.getElementById('minPrice').value
-                let maxPrice = document.getElementById('maxPrice').value
-                let minRating = document.getElementById('minRating').value
-                let radius = document.getElementById('radius').value
-                getLocation(loc => {
-                    if (loc === null) {
-                        url = `${url}?minprice=${minPrice}&maxprice=${maxPrice}&minrating=${minRating}&radius=${radius}`
-                    } else {
-                        console.log(loc)
-                        url = `${url}?location=${loc.latitude},${loc.longitude}&minprice=${minPrice}&maxprice=${maxPrice}&minrating=${minRating}&radius=${radius}`
-                    }
-
-                    fetch(url)
-                        .then(response => {
-                            return response.json()
-                        })
-                        .then(json => {
-                            let results = json.filter(el => el != null)
-                            console.log(results)
-                            let html =
-                                `
-      <table class="table is-striped is-hoverable is-fullwidth">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th><abbr title="Rating">⭐</abbr></th>
-            <th><abbr title="Price level">£</abbr></th>
-            <th><abbr title="Address">Addr</abbr></th>
-          </tr>
-        </thead>
-        <tbody>
-      ` +
-                                results
-                                    .map(res => {
-                                        return `
-          <tr>
-            <td>${res.name}</td>
-            <td>${res.rating}</td>
-            <td>${res.price_level}</td>
-            <td>${res.adr_address}</td>
-          </tr>
-        `
-                                    })
-                                    .join('\n') +
-                                `
-        </tbody>
-      </table>
-      `
-
-                            document.getElementById('results').innerHTML = html
-                        })
-                        .catch(err => console.error(err))
+            getLocation(location => {
+                var app = Elm.Main.init({
+                    node: document.getElementById('elm'),
+                    flags: location,
                 })
-            }
+            })
         </script>
     </head>
     <body>
         <section class="section">
-            <div class="container">
-                <h1 class="title">
-                    Find Cheap Restaurants
-                </h1>
-                <p class="subtitle">
-                    Helps you find <strong>good</strong>, cheap restaurants in
-                    an area.
-                </p>
-
-                <form>
-                    <div class="field is-horizontal">
-                        <label class="field-label is-normal"
-                            >Minimum price</label
-                        >
-                        <div class="field-body">
-                            <div class="control">
-                                <input
-                                    id="minPrice"
-                                    class="slider has-output is-fullwidth"
-                                    step="1"
-                                    min="0"
-                                    max="4"
-                                    value="2"
-                                    type="range"
-                                />
-                            </div>
-                            <output for="minPrice">2</output>
-                        </div>
-                    </div>
-
-                    <div class="field is-horizontal">
-                        <label class="field-label is-normal"
-                            >Maximum price</label
-                        >
-                        <div class="field-body">
-                            <div class="control">
-                                <input
-                                    id="maxPrice"
-                                    class="slider has-output is-fullwidth"
-                                    step="1"
-                                    min="0"
-                                    max="4"
-                                    value="2"
-                                    type="range"
-                                />
-                            </div>
-                            <output for="maxPrice">2</output>
-                        </div>
-                    </div>
-
-                    <div class="field is-horizontal">
-                        <label class="field-label is-normal"
-                            >Minimum rating</label
-                        >
-                        <div class="field-body">
-                            <div class="control">
-                                <input
-                                    id="minRating"
-                                    class="slider has-output is-fullwidth"
-                                    step="0.01"
-                                    min="0"
-                                    max="5"
-                                    value="4"
-                                    type="range"
-                                />
-                            </div>
-                            <output for="minRating">4.00</output>
-                        </div>
-                    </div>
-
-                    <div class="field is-horizontal">
-                        <label class="field-label is-normal"
-                            >Radius around your location</label
-                        >
-                        <div class="field-body">
-                            <div class="control">
-                                <input
-                                    id="radius"
-                                    class="slider has-output is-fullwidth"
-                                    step="1000"
-                                    min="1000"
-                                    max="50000"
-                                    value="3000"
-                                    type="range"
-                                />
-                            </div>
-                            <output for="radius">3000</output>
-                        </div>
-                    </div>
-
-                    <div class="field is-horizontal">
-                        <div class="field-label">
-                            <!-- Left empty for spacing -->
-                        </div>
-                        <div class="field-body">
-                            <div class="field">
-                                <div class="control">
-                                    <button
-                                        class="button is-primary"
-                                        onclick="findRestaurants()"
-                                        type="button"
-                                    >
-                                        Find restaurants near me!
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-          </section>
-          <section class="section">
-            <div class="container">
-              <div id="results" class="table-container"></div>
-            </div>
-          </section>
+            <div id="elm"></div>
+        </section>
     </body>
 </html>
