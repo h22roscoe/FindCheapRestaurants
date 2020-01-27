@@ -212,11 +212,11 @@ getResults model =
         locationAsString = String.join "," (List.map String.fromFloat [lat, long])
         params = String.join "&" (List.map (String.join "=") 
             [ [ "location", locationAsString ]
-            , [ "minRating", String.fromFloat model.minRating ]
-            , [ "minPrice", String.fromInt model.minPrice ]
-            , [ "maxPrice", String.fromInt model.maxPrice ]
+            , [ "minrating", String.fromFloat model.minRating ]
+            , [ "minprice", String.fromInt model.minPrice ]
+            , [ "maxprice", String.fromInt model.maxPrice ]
             , [ "radius", String.fromInt model.radius ]
-            , [ "minUserRatings", String.fromInt model.minUserRatings ]
+            , [ "minusers", String.fromInt model.minUserRatings ]
             ])
     in   
         Http.get
