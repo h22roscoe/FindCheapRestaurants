@@ -21,6 +21,13 @@
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#0cc2df" />
         <link rel="stylesheet" href="css/mystyles.css" />
+        <style>
+            /* Always set the map height explicitly to define the size of the div
+             * element that contains the map. */
+            #map {
+                height: 100%;
+            }
+        </style>
 
         <meta name="msapplication-TileColor" content="#2d89ef" />
         <meta name="theme-color" content="#0cc2df" />
@@ -60,12 +67,10 @@
         <script src="js/bundle.js"></script>
 
         <title>Find Cheap Restaurants</title>
-
         <!-- update the version number as needed -->
         <script defer src="/__/firebase/7.7.0/firebase-app.js"></script>
         <!-- initialize the SDK after all desired features are loaded -->
         <script defer src="/__/firebase/init.js"></script>
-        <script defer src="js/element.js"></script>
         <script src="js/main.js"></script>
         <script>
             function getLocation(callback) {
@@ -91,9 +96,48 @@
             }
 
             getLocation(location => {
-                var app = Elm.Main.init({
+                let app = Elm.Main.init({
                     node: document.getElementById('elm'),
                     flags: location,
+                })
+
+                app.ports.findPlaces.subscribe((data) => {
+                    let loc = new google.maps.LatLng(
+                        data.location[0],
+                        data.location[1]
+                    )
+
+                    let map = new google.maps.Map(
+                        document.getElementById('map'),
+                        {
+                            center: loc,
+                            zoom: 15,
+                        }
+                    )
+
+                    let request = {
+                        location: loc,
+                        radius: data.radius,
+                        keyword: 'restaurant',
+                        maxPriceLevel: data.maxPrice,
+                    }
+
+                    if (data.minPrice != 0) {
+                        request.minPriceLevel = data.minPrice
+                    }
+
+                    let service = new google.maps.places.PlacesService(map)
+                    service.nearbySearch(
+                        request,
+                        (results, status, pagination) => {
+                            console.log(results, status, pagination)
+                            app.ports.placesFound.send({
+                                results: results,
+                                status: status,
+                                hasNextPage: pagination.hasNextPage,
+                            })
+                        }
+                    )
                 })
             })
         </script>
@@ -101,6 +145,12 @@
     <body>
         <section class="section">
             <div id="elm"></div>
+            <div id="map"></div>
+            <script
+                src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA_dUd7CJ668AISZZ1nEQnXjXr9z9avo1Y&libraries=places"
+                async
+                defer
+            ></script>
         </section>
     </body>
 </html>

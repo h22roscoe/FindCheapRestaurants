@@ -1,10 +1,12 @@
-module Main exposing (main)
+port module Main exposing (main)
 import Browser
 import Html exposing (Html, div, label, input, h1, p, section, text, strong, button, table, thead, tbody, abbr, tr, th, td)
-import Html.Attributes exposing (class, id, step, min, max, type_, value)
+import Html.Attributes exposing (class, id, step, min, max, type_, value, title)
 import Html.Events exposing (onInput, onClick)
-import Http
-import Json.Decode exposing (Decoder, field, string, list, float, int, nullable, map4)
+import Json.Decode as Decode
+import Json.Encode as Encode
+import Html.Parser.Util exposing (toVirtualDom)
+import Html.Parser exposing (run)
 
 -- MAIN
 
@@ -14,14 +16,18 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = subscriptions
+        , subscriptions = \_ -> placesFound ResultsReceived
         }
+
+port findPlaces : Encode.Value -> Cmd msg
+port placesFound : (Decode.Value -> msg) -> Sub msg
 
 -- MODEL
 
 type ResultsModel
     = NotStarted
     | Loading
+    | FailedToLoad Decode.Error
     | Loaded (List Place)
 
 type alias Model =
@@ -34,23 +40,74 @@ type alias Model =
     , results : ResultsModel
     }
 
+encodeModel : Model -> Encode.Value
+encodeModel model =
+    let (lat, lng) = model.location in
+    Encode.object
+        [ ("minRating", Encode.float model.minRating)
+        , ("minPrice", Encode.int model.minPrice)
+        , ("maxPrice", Encode.int model.maxPrice)
+        , ("radius", Encode.int model.radius)
+        , ("minUserRatings", Encode.int model.minUserRatings)
+        , ("location", Encode.list identity [ Encode.float lat, Encode.float lng ])
+        ]
+
 type alias Place =
     { name : String
     , rating : Float
-    , price_level : Int
+    , price_level : Maybe Int
     , address : String 
     }
 
-mainDecoder : Decoder (List (Maybe Place))
-mainDecoder = list (nullable placeDecoder)
+type PlacesResultStatus
+    = Ok
+    | ZeroResults
+    | OverQueryLimit
+    | RequestDenied
+    | InvalidRequest
+    | UnknownError
 
-placeDecoder : Decoder Place
+type alias PlacesResult = 
+    { hasNextPage : Bool 
+    , results : List Place
+    , status : PlacesResultStatus
+    }
+
+mainDecoder : Decode.Decoder PlacesResult
+mainDecoder =
+    Decode.map3 PlacesResult
+        (Decode.field "hasNextPage" Decode.bool)
+        (Decode.field "results" (Decode.list placeDecoder))
+        (Decode.field "status" statusDecoder)
+
+statusDecoder : Decode.Decoder PlacesResultStatus
+statusDecoder =
+    Decode.string
+        |> Decode.andThen (\str ->
+            case str of
+                "OK" ->
+                    Decode.succeed Ok
+                "ZERO_RESULTS" ->
+                    Decode.succeed ZeroResults
+                "OVER_QUERY_LIMIT" ->
+                    Decode.succeed OverQueryLimit
+                "REQUEST_DENIED" ->
+                    Decode.succeed RequestDenied
+                "INVALID_REQUEST" ->
+                    Decode.succeed InvalidRequest
+                "UNKNOWN_ERROR" ->
+                    Decode.succeed UnknownError
+                somethingElse ->
+                    Decode.fail <| "Unknown status type: " ++ somethingElse
+        )
+
+placeDecoder : Decode.Decoder Place
 placeDecoder =
-    map4 Place
-        (field "name" string)
-        (field "rating" float)
-        (field "price_level" int)
-        (field "adr_address" string)
+    Decode.map4 Place
+        (Decode.field "name" Decode.string)
+        (Decode.field "rating" Decode.float)
+        (Decode.maybe (Decode.field "price_level" Decode.int))
+        (Decode.field "vicinity" Decode.string)
 
 init : (Float, Float) -> (Model, Cmd Msg)
 init (lat, long) =
@@ -66,7 +123,8 @@ type Msg
     | Radius Int
     | MinUserRatings Int
     | FindPlaces
-    | ResultsReceived (Result Http.Error (List (Maybe Place)))
+    | CloseModal
+    | ResultsReceived Decode.Value
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -98,22 +156,15 @@ update msg model =
         FindPlaces ->
             ({ model | results = Loading }, getResults model)
         
-        ResultsReceived result ->
-            case result of
-                Ok rs ->
-                    let
-                        noNulls = List.filterMap identity rs
-                    in 
-                        ({ model | results = Loaded noNulls }, Cmd.none)
-                Err _ ->
-                    ({ model | results = Loading }, Cmd.none)
-            
-
--- SUBSCRIPTIONS
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-  Sub.none
+        CloseModal ->
+            ({ model | results = NotStarted }, Cmd.none)
+        
+        ResultsReceived v ->
+            case Decode.decodeValue mainDecoder v of
+                Result.Ok rs ->
+                    ({ model | results = Loaded rs.results }, Cmd.none)
+                Result.Err err ->
+                    ({ model | results = FailedToLoad err }, Cmd.none)
 
 -- VIEW
 
@@ -138,15 +189,24 @@ tablePart rm =
                     ]
                 ]
             ]
+        FailedToLoad err ->
+            [ div [ class "container" ]
+                [ div [ class "modal is-active" ]
+                    [ div [ class "modal-background" ] []
+                    , div [ class "modal-content" ] [ p [] [ text (Decode.errorToString err) ] ]
+                    , button [ class "modal-close is-large", onClick CloseModal ] []
+                    ]
+                ]
+            ]
         Loaded rs ->
             [ div [ id "results", class "table-container" ]
-                [ table []
+                [ table [ class "table is-striped is-fullwidth" ]
                     [ thead []
                         [ tr []
                             [ th [] [ text "Name" ]
-                            , th [] [ abbr [] [ text "Rating" ], text "⭐" ]
-                            , th [] [ abbr [] [ text "Price level" ], text "£" ]
-                            , th [] [ abbr [] [ text "Address" ], text "Addr" ]
+                            , th [] [ abbr [ title "Rating" ] [ text "⭐" ] ]
+                            , th [] [ abbr [ title "Price level" ] [ text "£" ] ]
+                            , th [] [ abbr [ title "Address" ] [ text "Addr" ] ]
                             ]
                         ]
                     , tbody [] (List.map placeToRow rs)
@@ -159,9 +219,17 @@ placeToRow place =
     tr []
         [ td [] [ text place.name ]
         , td [] [ text (String.fromFloat place.rating) ]
-        , td [] [ text (String.fromInt place.price_level) ]
-        , td [] [ text place.address ]
+        , td [] [ text (String.fromInt <| Maybe.withDefault 0 place.price_level) ]
+        , td [] (viewAddr place.address)
         ]
+
+viewAddr : String -> List (Html Msg)
+viewAddr addr =
+    case run addr of
+        Result.Ok nodes ->
+            toVirtualDom nodes
+        Result.Err _ ->
+            [ text "No address found" ]
 
 titles : List (Html Msg)
 titles =
@@ -169,7 +237,7 @@ titles =
     , p [ class "subtitle" ]
         [ text "Helps you find "
         , strong [] [ text "good" ]
-        , text ",cheap restaurants in an area."
+        , text ", cheap restaurants in an area."
         ]
     ]
 
@@ -206,20 +274,4 @@ slider id_ step_ min_ max_ v toMsg =
 -- HTTP
 
 getResults : Model -> Cmd Msg
-getResults model =
-    let
-        (lat, long) = model.location
-        locationAsString = String.join "," (List.map String.fromFloat [lat, long])
-        params = String.join "&" (List.map (String.join "=") 
-            [ [ "location", locationAsString ]
-            , [ "minrating", String.fromFloat model.minRating ]
-            , [ "minprice", String.fromInt model.minPrice ]
-            , [ "maxprice", String.fromInt model.maxPrice ]
-            , [ "radius", String.fromInt model.radius ]
-            , [ "minusers", String.fromInt model.minUserRatings ]
-            ])
-    in   
-        Http.get
-            { url = "https://europe-west1-findcheaprestaurants.cloudfunctions.net/restaurants?" ++ params
-            , expect = Http.expectJson ResultsReceived mainDecoder
-            }
+getResults model = findPlaces (encodeModel model)
