@@ -1,16 +1,18 @@
 port module Main exposing (main)
+
 import Browser
-import Html exposing (Html, div, label, input, h1, p, section, text, strong, button, table, thead, tbody, abbr, tr, th, td)
-import Html.Attributes exposing (class, id, step, min, max, type_, value, title)
-import Html.Events exposing (onInput, onClick)
+import Html exposing (Html, abbr, button, div, h1, input, label, p, section, strong, table, tbody, td, text, th, thead, tr)
+import Html.Attributes exposing (attribute, class, id, max, min, step, title, type_, value)
+import Html.Events exposing (on, onClick, onInput)
 import Json.Decode as Decode
 import Json.Encode as Encode
-import Html.Parser.Util exposing (toVirtualDom)
-import Html.Parser exposing (run)
+
+
 
 -- MAIN
 
-main : Program (Float, Float) Model Msg
+
+main : Program ( Float, Float ) Model Msg
 main =
     Browser.element
         { init = init
@@ -19,10 +21,16 @@ main =
         , subscriptions = \_ -> placesFound ResultsReceived
         }
 
+
 port findPlaces : Encode.Value -> Cmd msg
+
+
 port placesFound : (Decode.Value -> msg) -> Sub msg
 
+
+
 -- MODEL
+
 
 type ResultsModel
     = NotStarted
@@ -30,34 +38,42 @@ type ResultsModel
     | FailedToLoad Decode.Error
     | Loaded (List Place)
 
+
 type alias Model =
     { minRating : Float
     , minPrice : Int
     , maxPrice : Int
     , radius : Int
     , minUserRatings : Int
-    , location : (Float, Float)
+    , location : ( Float, Float )
     , results : ResultsModel
     }
 
+
 encodeModel : Model -> Encode.Value
 encodeModel model =
-    let (lat, lng) = model.location in
+    let
+        ( lat, lng ) =
+            model.location
+    in
     Encode.object
-        [ ("minRating", Encode.float model.minRating)
-        , ("minPrice", Encode.int model.minPrice)
-        , ("maxPrice", Encode.int model.maxPrice)
-        , ("radius", Encode.int model.radius)
-        , ("minUserRatings", Encode.int model.minUserRatings)
-        , ("location", Encode.list identity [ Encode.float lat, Encode.float lng ])
+        [ ( "minRating", Encode.float model.minRating )
+        , ( "minPrice", Encode.int model.minPrice )
+        , ( "maxPrice", Encode.int model.maxPrice )
+        , ( "radius", Encode.int model.radius )
+        , ( "minUserRatings", Encode.int model.minUserRatings )
+        , ( "location", Encode.list identity [ Encode.float lat, Encode.float lng ] )
         ]
+
 
 type alias Place =
     { name : String
     , rating : Float
-    , price_level : Maybe Int
-    , address : String 
+    , priceLevel : Maybe Int
+    , address : String
+    , userRatingsTotal : Int
     }
+
 
 type PlacesResultStatus
     = Ok
@@ -67,11 +83,13 @@ type PlacesResultStatus
     | InvalidRequest
     | UnknownError
 
-type alias PlacesResult = 
-    { hasNextPage : Bool 
+
+type alias PlacesResult =
+    { hasNextPage : Bool
     , results : List Place
     , status : PlacesResultStatus
     }
+
 
 mainDecoder : Decode.Decoder PlacesResult
 mainDecoder =
@@ -80,43 +98,70 @@ mainDecoder =
         (Decode.field "results" (Decode.list placeDecoder))
         (Decode.field "status" statusDecoder)
 
+
 statusDecoder : Decode.Decoder PlacesResultStatus
 statusDecoder =
     Decode.string
-        |> Decode.andThen (\str ->
-            case str of
-                "OK" ->
-                    Decode.succeed Ok
-                "ZERO_RESULTS" ->
-                    Decode.succeed ZeroResults
-                "OVER_QUERY_LIMIT" ->
-                    Decode.succeed OverQueryLimit
-                "REQUEST_DENIED" ->
-                    Decode.succeed RequestDenied
-                "INVALID_REQUEST" ->
-                    Decode.succeed InvalidRequest
-                "UNKNOWN_ERROR" ->
-                    Decode.succeed UnknownError
-                somethingElse ->
-                    Decode.fail <| "Unknown status type: " ++ somethingElse
-        )
+        |> Decode.andThen
+            (\str ->
+                case str of
+                    "OK" ->
+                        Decode.succeed Ok
+
+                    "ZERO_RESULTS" ->
+                        Decode.succeed ZeroResults
+
+                    "OVER_QUERY_LIMIT" ->
+                        Decode.succeed OverQueryLimit
+
+                    "REQUEST_DENIED" ->
+                        Decode.succeed RequestDenied
+
+                    "INVALID_REQUEST" ->
+                        Decode.succeed InvalidRequest
+
+                    "UNKNOWN_ERROR" ->
+                        Decode.succeed UnknownError
+
+                    somethingElse ->
+                        Decode.fail <| "Unknown status type: " ++ somethingElse
+            )
+
 
 placeDecoder : Decode.Decoder Place
 placeDecoder =
-    Decode.map4 Place
+    Decode.map5 Place
         (Decode.field "name" Decode.string)
         (Decode.field "rating" Decode.float)
         (Decode.maybe (Decode.field "price_level" Decode.int))
         (Decode.field "vicinity" Decode.string)
+        (Decode.field "user_ratings_total" Decode.int)
 
-init : (Float, Float) -> (Model, Cmd Msg)
-init (lat, long) =
-    (Model 4.0 0 2 3000 10 (lat, long) NotStarted, Cmd.none)
+
+locationDecoder : Decode.Decoder Msg
+locationDecoder =
+    Decode.at [ "target", "latitude" ] Decode.float
+        |> Decode.andThen
+            (\lat ->
+                Decode.at [ "target", "longitude" ] Decode.float
+                    |> Decode.andThen
+                        (\long ->
+                            Decode.succeed <| Location ( lat, long )
+                        )
+            )
+
+
+init : ( Float, Float ) -> ( Model, Cmd Msg )
+init ( lat, long ) =
+    ( Model 4.0 0 2 3000 10 ( lat, long ) NotStarted, Cmd.none )
+
+
 
 -- UPDATE
 
+
 type Msg
-    = Location (Float, Float)
+    = Location ( Float, Float )
     | MinRating Float
     | MinPrice Int
     | MaxPrice Int
@@ -126,71 +171,143 @@ type Msg
     | CloseModal
     | ResultsReceived Decode.Value
 
-update : Msg -> Model -> (Model, Cmd Msg)
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Location loc ->
-            ({ model | location = loc }, Cmd.none)
+            ( { model | location = loc }, Cmd.none )
 
         MinRating rating ->
-            ({ model | minRating = rating }, Cmd.none)
+            case model.results of
+                Loaded rs ->
+                    filterResultsList { model | minRating = rating } rs
+
+                _ ->
+                    ( { model | minRating = rating }, Cmd.none )
 
         MinPrice price ->
             if price <= model.maxPrice then
-                ({ model | minPrice = price }, Cmd.none)
+                case model.results of
+                    Loaded rs ->
+                        filterResultsList { model | minPrice = price } rs
+
+                    _ ->
+                        ( { model | minPrice = price }, Cmd.none )
+
             else
-                (model, Cmd.none)
-        
+                ( model, Cmd.none )
+
         MaxPrice price ->
             if price >= model.minPrice then
-                ({ model | maxPrice = price }, Cmd.none)
+                case model.results of
+                    Loaded rs ->
+                        filterResultsList { model | maxPrice = price } rs
+
+                    _ ->
+                        ( { model | maxPrice = price }, Cmd.none )
+
             else
-                (model, Cmd.none)
-        
+                ( model, Cmd.none )
+
         Radius r ->
-            ({ model | radius = r }, Cmd.none)
+            case model.results of
+                Loaded rs ->
+                    filterResultsList { model | radius = r } rs
+
+                _ ->
+                    ( { model | radius = r }, Cmd.none )
 
         MinUserRatings minUserRatings ->
-            ({ model | minUserRatings = minUserRatings }, Cmd.none)
-        
+            case model.results of
+                Loaded rs ->
+                    filterResultsList { model | minUserRatings = minUserRatings } rs
+
+                _ ->
+                    ( { model | minUserRatings = minUserRatings }, Cmd.none )
+
         FindPlaces ->
-            ({ model | results = Loading }, getResults model)
-        
+            ( { model | results = Loading }, getResults model )
+
         CloseModal ->
-            ({ model | results = NotStarted }, Cmd.none)
-        
+            ( { model | results = NotStarted }, Cmd.none )
+
         ResultsReceived v ->
             case Decode.decodeValue mainDecoder v of
                 Result.Ok rs ->
-                    ({ model | results = Loaded rs.results }, Cmd.none)
+                    filterResultsList model rs.results
+
                 Result.Err err ->
-                    ({ model | results = FailedToLoad err }, Cmd.none)
+                    ( { model | results = FailedToLoad err }, Cmd.none )
+
+
+filterResultsList : Model -> List Place -> ( Model, Cmd msg )
+filterResultsList model rs =
+    let
+        lessThanMaxPrice : Place -> Bool
+        lessThanMaxPrice x =
+            Maybe.withDefault 0 x.priceLevel <= model.maxPrice
+
+        moreThanMinPrice : Place -> Bool
+        moreThanMinPrice x =
+            Maybe.withDefault 4 x.priceLevel >= model.minPrice
+
+        moreThanMinUserRatings : Place -> Bool
+        moreThanMinUserRatings x =
+            x.userRatingsTotal >= model.minUserRatings
+
+        moreThanMinRating : Place -> Bool
+        moreThanMinRating x =
+            x.rating >= model.minRating
+
+        allConds =
+            and [ lessThanMaxPrice, moreThanMinPrice, moreThanMinUserRatings, moreThanMinRating ]
+
+        wantedResults =
+            List.filter allConds rs
+    in
+    ( { model | results = Loaded wantedResults }, Cmd.none )
+
+
+and : List (a -> Bool) -> a -> Bool
+and funs arg =
+    List.all identity <| List.map ((|>) arg) funs
+
+
 
 -- VIEW
 
+
 view : Model -> Html Msg
 view model =
-  section [ class "section" ]
-    [ div [ class "level" ] (titles ++ [
-            mainForm model
-        ])
-    , div [ class "level" ] (tablePart model.results)
-    ]
+    section [ class "section" ]
+        [ div [ class "level" ]
+            (titles
+                ++ [ mainForm model
+                   ]
+            )
+        , div [ class "level" ] (tablePart model)
+        ]
 
-tablePart : ResultsModel -> List (Html Msg)
-tablePart rm =
-    case rm of
+
+tablePart : Model -> List (Html Msg)
+tablePart model =
+    case model.results of
         NotStarted ->
-            []
+            [ div [ id "map" ] [] ]
+
         Loading ->
-            [ div [ class "container" ]
+            [ div [ id "map" ] []
+            , div [ class "container" ]
                 [ div [ class "loader-wrapper is-active" ]
                     [ div [ class "loader is-loading" ] []
                     ]
                 ]
             ]
+
         FailedToLoad err ->
-            [ div [ class "container" ]
+            [ div [ id "map" ] []
+            , div [ class "container" ]
                 [ div [ class "modal is-active" ]
                     [ div [ class "modal-background" ] []
                     , div [ class "modal-content" ] [ p [] [ text (Decode.errorToString err) ] ]
@@ -198,15 +315,26 @@ tablePart rm =
                     ]
                 ]
             ]
+
         Loaded rs ->
-            [ div [ id "results", class "table-container" ]
+            [ div [ id "map" ]
+                [ googleMap
+                    [ attribute "latitude" (String.fromFloat <| Tuple.first model.location)
+                    , attribute "longitude" (String.fromFloat <| Tuple.second model.location)
+                    , attribute "drag-events" "true"
+                    , attribute "api-key" "AIzaSyA_dUd7CJ668AISZZ1nEQnXjXr9z9avo1Y"
+                    , recordLatLongOnDrag
+                    ]
+                    []
+                ]
+            , div [ id "results", class "table-container" ]
                 [ table [ class "table is-striped is-fullwidth" ]
                     [ thead []
                         [ tr []
                             [ th [] [ text "Name" ]
                             , th [] [ abbr [ title "Rating" ] [ text "⭐" ] ]
                             , th [] [ abbr [ title "Price level" ] [ text "£" ] ]
-                            , th [] [ abbr [ title "Address" ] [ text "Addr" ] ]
+                            , th [] [ abbr [ title "Address" ] [ text "Address" ] ]
                             ]
                         ]
                     , tbody [] (List.map placeToRow rs)
@@ -214,22 +342,26 @@ tablePart rm =
                 ]
             ]
 
+
+googleMap : List (Html.Attribute a) -> List (Html a) -> Html a
+googleMap =
+    Html.node "google-map"
+
+
+googleMapMarker : List (Html.Attribute a) -> List (Html a) -> Html a
+googleMapMarker =
+    Html.node "google-map-marker"
+
+
 placeToRow : Place -> Html Msg
 placeToRow place =
     tr []
         [ td [] [ text place.name ]
         , td [] [ text (String.fromFloat place.rating) ]
-        , td [] [ text (String.fromInt <| Maybe.withDefault 0 place.price_level) ]
-        , td [] (viewAddr place.address)
+        , td [] [ text (String.fromInt <| Maybe.withDefault 0 place.priceLevel) ]
+        , td [] [ text place.address ]
         ]
 
-viewAddr : String -> List (Html Msg)
-viewAddr addr =
-    case run addr of
-        Result.Ok nodes ->
-            toVirtualDom nodes
-        Result.Err _ ->
-            [ text "No address found" ]
 
 titles : List (Html Msg)
 titles =
@@ -241,6 +373,7 @@ titles =
         ]
     ]
 
+
 mainForm : Model -> Html Msg
 mainForm model =
     Html.form []
@@ -248,9 +381,10 @@ mainForm model =
         , formField "Maximum price" (slider "maxPrice" 1 0 4 (String.fromInt model.maxPrice) (MaxPrice << Maybe.withDefault 2 << String.toInt)) (p [] [ text (String.fromInt model.maxPrice) ])
         , formField "Minimum rating" (slider "minRating" 0.01 0 4.99 (String.fromFloat model.minRating) (MinRating << Maybe.withDefault 4.0 << String.toFloat)) (p [] [ text (String.fromFloat model.minRating) ])
         , formField "Radius" (slider "radius" 1000 1000 50000 (String.fromInt model.radius) (Radius << Maybe.withDefault 3000 << String.toInt)) (p [] [ text (String.fromInt model.radius) ])
-        , formField "Minimum user ratings" (slider "minUserRatings" 1 0 5000 (String.fromInt model.minUserRatings) (MinUserRatings << Maybe.withDefault 10 << String.toInt)) (p [] [ text (String.fromInt model.minUserRatings)])
+        , formField "Minimum user ratings" (slider "minUserRatings" 10 0 3000 (String.fromInt model.minUserRatings) (MinUserRatings << Maybe.withDefault 10 << String.toInt)) (p [] [ text (String.fromInt model.minUserRatings) ])
         , formField "" (button [ class "button is-primary", onClick FindPlaces, type_ "button" ] [ text "Find restaurants near me!" ]) (div [] [])
         ]
+
 
 formField : String -> Html Msg -> Html Msg -> Html Msg
 formField name input output =
@@ -262,16 +396,31 @@ formField name input output =
             ]
         ]
 
+
 slider : String -> Float -> Float -> Float -> String -> (String -> msg) -> Html msg
 slider id_ step_ min_ max_ v toMsg =
     let
-        stepStr = String.fromFloat step_
-        minStr = String.fromFloat min_
-        maxStr = String.fromFloat max_
+        stepStr =
+            String.fromFloat step_
+
+        minStr =
+            String.fromFloat min_
+
+        maxStr =
+            String.fromFloat max_
     in
-        input [ id id_, step stepStr, Html.Attributes.min minStr, Html.Attributes.max maxStr, type_ "range", class "slider has-output is-fullwidth", onInput toMsg, value v ] []
+    input [ id id_, step stepStr, Html.Attributes.min minStr, Html.Attributes.max maxStr, type_ "range", class "slider has-output is-fullwidth", onInput toMsg, value v ] []
+
+
+recordLatLongOnDrag : Html.Attribute Msg
+recordLatLongOnDrag =
+    on "google-map-drag" locationDecoder
+
+
 
 -- HTTP
 
+
 getResults : Model -> Cmd Msg
-getResults model = findPlaces (encodeModel model)
+getResults model =
+    findPlaces (encodeModel model)

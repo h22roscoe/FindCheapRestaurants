@@ -25,6 +25,12 @@ $control-border-width: 2px;
 $input-border-color: transparent;
 $input-shadow: none;
 
+google-map {
+    height: 400px;
+    width: 100%;
+    margin: 10px;
+}
+
 .loader-wrapper {
     position: absolute;
     top: 0;

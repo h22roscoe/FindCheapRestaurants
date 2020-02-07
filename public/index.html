@@ -21,13 +21,6 @@
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#0cc2df" />
         <link rel="stylesheet" href="css/mystyles.css" />
-        <style>
-            /* Always set the map height explicitly to define the size of the div
-             * element that contains the map. */
-            #map {
-                height: 100%;
-            }
-        </style>
 
         <meta name="msapplication-TileColor" content="#2d89ef" />
         <meta name="theme-color" content="#0cc2df" />
@@ -38,6 +31,13 @@
             defer
             src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"
         ></script>
+        <script src="bower_components/webcomponentsjs/custom-elements-es5-adapter.js"></script>
+        <script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+        <link rel="import" href="bower_components/google-map/google-map.html" />
+        <link
+            rel="import"
+            href="bower_components/google-apis/google-apis.html"
+        />
         <script>
             // This is the "Offline page" service worker
 
@@ -96,48 +96,48 @@
             }
 
             getLocation(location => {
-                let app = Elm.Main.init({
-                    node: document.getElementById('elm'),
-                    flags: location,
-                })
+                let maps = document.querySelector('google-maps-api')
+                maps.addEventListener('api-load', function(e) {
+                    let app = Elm.Main.init({
+                        node: document.getElementById('elm'),
+                        flags: location,
+                    })
 
-                app.ports.findPlaces.subscribe((data) => {
-                    let loc = new google.maps.LatLng(
-                        data.location[0],
-                        data.location[1]
-                    )
+                    app.ports.findPlaces.subscribe(data => {
+                        let loc = new this.api.LatLng(
+                            data.location[0],
+                            data.location[1]
+                        )
 
-                    let map = new google.maps.Map(
-                        document.getElementById('map'),
-                        {
+                        let map = new this.api.Map(document.getElementById('map'), {
                             center: loc,
                             zoom: 15,
+                        })
+
+                        let request = {
+                            location: loc,
+                            radius: data.radius,
+                            keyword: 'restaurant',
+                            maxPriceLevel: data.maxPrice,
                         }
-                    )
 
-                    let request = {
-                        location: loc,
-                        radius: data.radius,
-                        keyword: 'restaurant',
-                        maxPriceLevel: data.maxPrice,
-                    }
-
-                    if (data.minPrice != 0) {
-                        request.minPriceLevel = data.minPrice
-                    }
-
-                    let service = new google.maps.places.PlacesService(map)
-                    service.nearbySearch(
-                        request,
-                        (results, status, pagination) => {
-                            console.log(results, status, pagination)
-                            app.ports.placesFound.send({
-                                results: results,
-                                status: status,
-                                hasNextPage: pagination.hasNextPage,
-                            })
+                        if (data.minPrice != 0) {
+                            request.minPriceLevel = data.minPrice
                         }
-                    )
+
+                        let service = new this.api.places.PlacesService(map)
+                        service.nearbySearch(
+                            request,
+                            (results, status, pagination) => {
+                                console.log(results, status, pagination)
+                                app.ports.placesFound.send({
+                                    results: results,
+                                    status: status,
+                                    hasNextPage: pagination.hasNextPage,
+                                })
+                            }
+                        )
+                    })
                 })
             })
         </script>
@@ -145,12 +145,10 @@
     <body>
         <section class="section">
             <div id="elm"></div>
-            <div id="map"></div>
-            <script
-                src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA_dUd7CJ668AISZZ1nEQnXjXr9z9avo1Y&libraries=places"
-                async
-                defer
-            ></script>
+            <google-maps-api
+                api-key="AIzaSyA_dUd7CJ668AISZZ1nEQnXjXr9z9avo1Y"
+                version="3.exp"
+            ></google-maps-api>
         </section>
     </body>
 </html>

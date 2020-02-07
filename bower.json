@@ -1,0 +1,21 @@
+{
+  "name": "findcheaprestaurants",
+  "description": "Helps me find good, cheap restaurants in an area.",
+  "main": "src/index.html",
+  "authors": [
+    "Harry <h22roscoe@gmail.com>"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/h22roscoe/FindCheapRestaurants",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "google-map": "GoogleWebComponents/google-map#^2.0.5"
+  }
+}
