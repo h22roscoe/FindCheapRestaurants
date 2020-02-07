@@ -5146,7 +5146,7 @@ var $elm$json$Json$Decode$float = _Json_decodeFloat;
 var $elm$json$Json$Decode$index = _Json_decodeIndex;
 var $author$project$Main$Model = F7(
 	function (minRating, minPrice, maxPrice, radius, minUserRatings, location, results) {
-		return {K: location, t: maxPrice, v: minPrice, z: minRating, A: minUserRatings, F: radius, k: results};
+		return {K: location, t: maxPrice, v: minPrice, z: minRating, A: minUserRatings, F: radius, j: results};
 	});
 var $author$project$Main$NotStarted = {$: 0};
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
@@ -5267,7 +5267,7 @@ var $author$project$Main$filterResultsList = F2(
 			_Utils_update(
 				model,
 				{
-					k: $author$project$Main$Loaded(wantedResults)
+					j: $author$project$Main$Loaded(wantedResults)
 				}),
 			$elm$core$Platform$Cmd$none);
 	});
@@ -5336,7 +5336,7 @@ var $author$project$Main$getResults = function (model) {
 };
 var $author$project$Main$PlacesResult = F3(
 	function (hasNextPage, results, status) {
-		return {a2: hasNextPage, k: results, be: status};
+		return {a2: hasNextPage, j: results, be: status};
 	});
 var $elm$json$Json$Decode$bool = _Json_decodeBool;
 var $elm$json$Json$Decode$field = _Json_decodeField;
@@ -5417,7 +5417,7 @@ var $author$project$Main$update = F2(
 					$elm$core$Platform$Cmd$none);
 			case 1:
 				var rating = msg.a;
-				var _v1 = model.k;
+				var _v1 = model.j;
 				if (_v1.$ === 3) {
 					var rs = _v1.a;
 					return A2(
@@ -5436,7 +5436,7 @@ var $author$project$Main$update = F2(
 			case 2:
 				var price = msg.a;
 				if (_Utils_cmp(price, model.t) < 1) {
-					var _v2 = model.k;
+					var _v2 = model.j;
 					if (_v2.$ === 3) {
 						var rs = _v2.a;
 						return A2(
@@ -5458,7 +5458,7 @@ var $author$project$Main$update = F2(
 			case 3:
 				var price = msg.a;
 				if (_Utils_cmp(price, model.v) > -1) {
-					var _v3 = model.k;
+					var _v3 = model.j;
 					if (_v3.$ === 3) {
 						var rs = _v3.a;
 						return A2(
@@ -5479,7 +5479,7 @@ var $author$project$Main$update = F2(
 				}
 			case 4:
 				var r = msg.a;
-				var _v4 = model.k;
+				var _v4 = model.j;
 				if (_v4.$ === 3) {
 					var rs = _v4.a;
 					return A2(
@@ -5497,7 +5497,7 @@ var $author$project$Main$update = F2(
 				}
 			case 5:
 				var minUserRatings = msg.a;
-				var _v5 = model.k;
+				var _v5 = model.j;
 				if (_v5.$ === 3) {
 					var rs = _v5.a;
 					return A2(
@@ -5517,27 +5517,27 @@ var $author$project$Main$update = F2(
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{k: $author$project$Main$Loading}),
+						{j: $author$project$Main$Loading}),
 					$author$project$Main$getResults(model));
 			case 7:
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{k: $author$project$Main$NotStarted}),
+						{j: $author$project$Main$NotStarted}),
 					$elm$core$Platform$Cmd$none);
 			default:
 				var v = msg.a;
 				var _v6 = A2($elm$json$Json$Decode$decodeValue, $author$project$Main$mainDecoder, v);
 				if (!_v6.$) {
 					var rs = _v6.a;
-					return A2($author$project$Main$filterResultsList, model, rs.k);
+					return A2($author$project$Main$filterResultsList, model, rs.j);
 				} else {
 					var err = _v6.a;
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
 							{
-								k: $author$project$Main$FailedToLoad(err)
+								j: $author$project$Main$FailedToLoad(err)
 							}),
 						$elm$core$Platform$Cmd$none);
 				}
@@ -5843,9 +5843,6 @@ var $author$project$Main$mainForm = function (model) {
 				A2($elm$html$Html$div, _List_Nil, _List_Nil))
 			]));
 };
-var $elm$html$Html$section = _VirtualDom_node('section');
-var $author$project$Main$CloseModal = {$: 7};
-var $elm$html$Html$abbr = _VirtualDom_node('abbr');
 var $elm$virtual_dom$VirtualDom$attribute = F2(
 	function (key, value) {
 		return A2(
@@ -5860,6 +5857,83 @@ var $elm$virtual_dom$VirtualDom$node = function (tag) {
 };
 var $elm$html$Html$node = $elm$virtual_dom$VirtualDom$node;
 var $author$project$Main$googleMap = $elm$html$Html$node('google-map');
+var $author$project$Main$Location = function (a) {
+	return {$: 0, a: a};
+};
+var $author$project$Main$locationDecoder = A2(
+	$elm$json$Json$Decode$andThen,
+	function (lat) {
+		return A2(
+			$elm$json$Json$Decode$andThen,
+			function (_long) {
+				return $elm$json$Json$Decode$succeed(
+					$author$project$Main$Location(
+						_Utils_Tuple2(lat, _long)));
+			},
+			A2(
+				$elm$json$Json$Decode$at,
+				_List_fromArray(
+					['target', 'longitude']),
+				$elm$json$Json$Decode$float));
+	},
+	A2(
+		$elm$json$Json$Decode$at,
+		_List_fromArray(
+			['target', 'latitude']),
+		$elm$json$Json$Decode$float));
+var $author$project$Main$recordLatLongOnDrag = A2($elm$html$Html$Events$on, 'google-map-drag', $author$project$Main$locationDecoder);
+var $elm$core$Tuple$second = function (_v0) {
+	var y = _v0.b;
+	return y;
+};
+var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
+var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
+var $author$project$Main$mapView = function (model) {
+	var _v0 = model.j;
+	if (_v0.$ === 3) {
+		return A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$id('map'),
+					A2($elm$html$Html$Attributes$style, 'width', '80%'),
+					A2($elm$html$Html$Attributes$style, 'height', '80%'),
+					A2($elm$html$Html$Attributes$style, 'margin', '10%'),
+					A2($elm$html$Html$Attributes$style, 'position', 'absolute')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$author$project$Main$googleMap,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$Attributes$attribute,
+							'latitude',
+							$elm$core$String$fromFloat(model.K.a)),
+							A2(
+							$elm$html$Html$Attributes$attribute,
+							'longitude',
+							$elm$core$String$fromFloat(model.K.b)),
+							A2($elm$html$Html$Attributes$attribute, 'drag-events', 'true'),
+							A2($elm$html$Html$Attributes$attribute, 'api-key', 'AIzaSyA_dUd7CJ668AISZZ1nEQnXjXr9z9avo1Y'),
+							$author$project$Main$recordLatLongOnDrag
+						]),
+					_List_Nil)
+				]));
+	} else {
+		return A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$id('map')
+				]),
+			_List_Nil);
+	}
+};
+var $elm$html$Html$section = _VirtualDom_node('section');
+var $author$project$Main$CloseModal = {$: 7};
+var $elm$html$Html$abbr = _VirtualDom_node('abbr');
 var $elm$html$Html$td = _VirtualDom_node('td');
 var $elm$html$Html$tr = _VirtualDom_node('tr');
 var $author$project$Main$placeToRow = function (place) {
@@ -5901,64 +5975,19 @@ var $author$project$Main$placeToRow = function (place) {
 					]))
 			]));
 };
-var $author$project$Main$Location = function (a) {
-	return {$: 0, a: a};
-};
-var $author$project$Main$locationDecoder = A2(
-	$elm$json$Json$Decode$andThen,
-	function (lat) {
-		return A2(
-			$elm$json$Json$Decode$andThen,
-			function (_long) {
-				return $elm$json$Json$Decode$succeed(
-					$author$project$Main$Location(
-						_Utils_Tuple2(lat, _long)));
-			},
-			A2(
-				$elm$json$Json$Decode$at,
-				_List_fromArray(
-					['target', 'longitude']),
-				$elm$json$Json$Decode$float));
-	},
-	A2(
-		$elm$json$Json$Decode$at,
-		_List_fromArray(
-			['target', 'latitude']),
-		$elm$json$Json$Decode$float));
-var $author$project$Main$recordLatLongOnDrag = A2($elm$html$Html$Events$on, 'google-map-drag', $author$project$Main$locationDecoder);
-var $elm$core$Tuple$second = function (_v0) {
-	var y = _v0.b;
-	return y;
-};
 var $elm$html$Html$table = _VirtualDom_node('table');
 var $elm$html$Html$tbody = _VirtualDom_node('tbody');
 var $elm$html$Html$th = _VirtualDom_node('th');
 var $elm$html$Html$thead = _VirtualDom_node('thead');
 var $elm$html$Html$Attributes$title = $elm$html$Html$Attributes$stringProperty('title');
 var $author$project$Main$tablePart = function (model) {
-	var _v0 = model.k;
+	var _v0 = model.j;
 	switch (_v0.$) {
 		case 0:
-			return _List_fromArray(
-				[
-					A2(
-					$elm$html$Html$div,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$id('map')
-						]),
-					_List_Nil)
-				]);
+			return _List_Nil;
 		case 1:
 			return _List_fromArray(
 				[
-					A2(
-					$elm$html$Html$div,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$id('map')
-						]),
-					_List_Nil),
 					A2(
 					$elm$html$Html$div,
 					_List_fromArray(
@@ -5989,13 +6018,6 @@ var $author$project$Main$tablePart = function (model) {
 			var err = _v0.a;
 			return _List_fromArray(
 				[
-					A2(
-					$elm$html$Html$div,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$id('map')
-						]),
-					_List_Nil),
 					A2(
 					$elm$html$Html$div,
 					_List_fromArray(
@@ -6051,32 +6073,6 @@ var $author$project$Main$tablePart = function (model) {
 			var rs = _v0.a;
 			return _List_fromArray(
 				[
-					A2(
-					$elm$html$Html$div,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$id('map')
-						]),
-					_List_fromArray(
-						[
-							A2(
-							$author$project$Main$googleMap,
-							_List_fromArray(
-								[
-									A2(
-									$elm$html$Html$Attributes$attribute,
-									'latitude',
-									$elm$core$String$fromFloat(model.K.a)),
-									A2(
-									$elm$html$Html$Attributes$attribute,
-									'longitude',
-									$elm$core$String$fromFloat(model.K.b)),
-									A2($elm$html$Html$Attributes$attribute, 'drag-events', 'true'),
-									A2($elm$html$Html$Attributes$attribute, 'api-key', 'AIzaSyA_dUd7CJ668AISZZ1nEQnXjXr9z9avo1Y'),
-									$author$project$Main$recordLatLongOnDrag
-								]),
-							_List_Nil)
-						])),
 					A2(
 					$elm$html$Html$div,
 					_List_fromArray(
@@ -6230,7 +6226,8 @@ var $author$project$Main$view = function (model) {
 					[
 						$elm$html$Html$Attributes$class('level')
 					]),
-				$author$project$Main$tablePart(model))
+				$author$project$Main$tablePart(model)),
+				$author$project$Main$mapView(model)
 			]));
 };
 var $author$project$Main$main = $elm$browser$Browser$element(

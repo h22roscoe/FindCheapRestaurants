@@ -2,7 +2,7 @@ port module Main exposing (main)
 
 import Browser
 import Html exposing (Html, abbr, button, div, h1, input, label, p, section, strong, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (attribute, class, id, max, min, step, title, type_, value)
+import Html.Attributes exposing (attribute, class, id, max, min, step, style, title, type_, value)
 import Html.Events exposing (on, onClick, onInput)
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -287,6 +287,7 @@ view model =
                    ]
             )
         , div [ class "level" ] (tablePart model)
+        , mapView model
         ]
 
 
@@ -294,11 +295,10 @@ tablePart : Model -> List (Html Msg)
 tablePart model =
     case model.results of
         NotStarted ->
-            [ div [ id "map" ] [] ]
+            []
 
         Loading ->
-            [ div [ id "map" ] []
-            , div [ class "container" ]
+            [ div [ class "container" ]
                 [ div [ class "loader-wrapper is-active" ]
                     [ div [ class "loader is-loading" ] []
                     ]
@@ -306,8 +306,7 @@ tablePart model =
             ]
 
         FailedToLoad err ->
-            [ div [ id "map" ] []
-            , div [ class "container" ]
+            [ div [ class "container" ]
                 [ div [ class "modal is-active" ]
                     [ div [ class "modal-background" ] []
                     , div [ class "modal-content" ] [ p [] [ text (Decode.errorToString err) ] ]
@@ -317,17 +316,7 @@ tablePart model =
             ]
 
         Loaded rs ->
-            [ div [ id "map" ]
-                [ googleMap
-                    [ attribute "latitude" (String.fromFloat <| Tuple.first model.location)
-                    , attribute "longitude" (String.fromFloat <| Tuple.second model.location)
-                    , attribute "drag-events" "true"
-                    , attribute "api-key" "AIzaSyA_dUd7CJ668AISZZ1nEQnXjXr9z9avo1Y"
-                    , recordLatLongOnDrag
-                    ]
-                    []
-                ]
-            , div [ id "results", class "table-container" ]
+            [ div [ id "results", class "table-container" ]
                 [ table [ class "table is-striped is-fullwidth" ]
                     [ thead []
                         [ tr []
@@ -341,6 +330,31 @@ tablePart model =
                     ]
                 ]
             ]
+
+
+mapView : Model -> Html Msg
+mapView model =
+    case model.results of
+        Loaded _ ->
+            div
+                [ id "map"
+                , style "width" "80%"
+                , style "height" "80%"
+                , style "margin" "10%"
+                , style "position" "absolute"
+                ]
+                [ googleMap
+                    [ attribute "latitude" (String.fromFloat <| Tuple.first model.location)
+                    , attribute "longitude" (String.fromFloat <| Tuple.second model.location)
+                    , attribute "drag-events" "true"
+                    , attribute "api-key" "AIzaSyA_dUd7CJ668AISZZ1nEQnXjXr9z9avo1Y"
+                    , recordLatLongOnDrag
+                    ]
+                    []
+                ]
+
+        _ ->
+            div [ id "map" ] []
 
 
 googleMap : List (Html.Attribute a) -> List (Html a) -> Html a

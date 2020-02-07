@@ -26,9 +26,11 @@ $input-border-color: transparent;
 $input-shadow: none;
 
 google-map {
-    height: 400px;
-    width: 100%;
-    margin: 10px;
+    margin: 10%;
+    padding: 5%;
+    height: 80%;
+    width: 80%;
+    position: absolute;
 }
 
 .loader-wrapper {
